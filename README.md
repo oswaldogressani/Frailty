@@ -1,12 +1,15 @@
 Flexible Bayesian estimation for gamma frailty models
 ================
 Oswaldo Gressani
-2023-08-11
+2023-09-06
 
 ### Routines
 
-- **simfrail** A routine for simulating survival times accounting for a
-  frailty term.
+- **simfrail** 2023-08-11 “Added a routine for simulating survival times
+  accounting for a frailty term.”
+
+- **lpsfrail** 2023-09-06 “Added lpsfrail routine coding the likelihood
+  and the associated gradient and Hessian”.
 
 ### Repository version
 
