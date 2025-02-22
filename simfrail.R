@@ -4,26 +4,37 @@
 #------------------------------------------------------------------------------#
 
 
-simfrail <- function(a = 2.4, b = 4, frailpar = 1.7, betas = c(1.5,-0.3,0.2),
-                     ngroups = 3, ni = rep(150, ngroups), censrate = 0.15){
+simfrail <- function(a = 5, b = 70, frailpar = 1.5, betas = c(log(2),-0.15),
+                     ngroups = 5, ni = rep(40, 5), censrate = 0.10){
   
   data = list()
   p <- length(betas)
   ainv <- 1 / a
   Cr <- data.frame(matrix(nrow = ngroups, ncol = 2))
   colnames(Cr) <- c("Group", "Censoring rate")
+  n <- sum(ni)
+  
+  # Mean and variance of the baseline distribution
+  basemean <- b * gamma(1+1/a)
+  basevar <- b^2 * (gamma(1+2/a) - (gamma(1+1/a))^2) 
+  ttrunk <- 120
   
   for (i in 1:ngroups) {
     # Draw a frailty term shared across a group
     u <- rgamma(n = 1, shape = frailpar, rate = frailpar)
-    data[[i]] <- data.frame(matrix(nrow = ni[i], ncol = p + 3))
+    data[[i]] <- data.frame(matrix(nrow = ni[i], ncol = p + 4))
     covarnames <- paste0(rep("z", p), seq(p))
-    colnames(data[[i]]) <- c("Time", "Censor", "delta", covarnames)
+    colnames(data[[i]]) <- c("Time", "Censor", "delta", covarnames, "Cluster")
     # Draw covariates and survival time within group
     for (j in 1:ni[i]) {
-      for (l in 1:p) data[[i]][j, 3 + l] <- rnorm(1)
+      data[[i]][j, 4:(4+p-1)] <- c(rbinom(1,1,prob = 0.5) , rnorm(1))
       expbetaz <- exp(sum(betas * data[[i]][j, 4:(3 + p)]))
       data[[i]][j, 1] <- b * (-log(1 - runif(1)) / (u * expbetaz)) ^ (ainv)
+      #To be adjusted!! truncation
+      while(data[[i]][j, 1]>ttrunk){
+        data[[i]][j, 1] <- b * (-log(1 - runif(1)) / (u * expbetaz)) ^ (ainv)
+      }
+      data[[i]][j,6] <- i
     }
     # Fill censoring and event indicator
     Tij <- data[[i]]$Time
@@ -31,6 +42,7 @@ simfrail <- function(a = 2.4, b = 4, frailpar = 1.7, betas = c(1.5,-0.3,0.2),
       val <- (1-censrate) - mean(exp(-rho * Tij))
       return(val)
     }
+    
     
     rho_lb <- 0.1
     rho_ub <- 0.1
@@ -47,15 +59,28 @@ simfrail <- function(a = 2.4, b = 4, frailpar = 1.7, betas = c(1.5,-0.3,0.2),
     data[[i]][,2] <- C
     data[[i]][,3] <- delta
     Cr[i,1] <- i
-    Cr[i,2] <-  (1/ni[i])*sum(data[[i]][,3]==0) 
+    Cr[i,2] <- (1/ni[i])*sum(data[[i]][,3]==0)
+  
   }
   
-  outlist <- list(data = data, Cr = Cr)
+  S0 <- function(t){
+    fS0 <- exp(-(t/b)^a)
+    return(fS0)
+  }
+  
+  h0 <- function(t){
+    fh0 <- (a/(b^a)) * t^(a-1)
+    return(fh0)
+  }
+  
+  outlist <- list(data = data, Cr = Cr, S0 = S0, h0 = h0, betas = betas,
+                  censrate = censrate, frailpar = frailpar, ttrunk = ttrunk,
+                  n = n, ngroups = ngroups, ni = ni)
   return(outlist)
 }
   
 # Example
-simfrail(ngroups = 5, ni = rep(100, 5), censrate = 0.2)
+# x <- simfrail(censrate = 0.2)
 
 
 
