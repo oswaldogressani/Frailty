@@ -1,22 +1,20 @@
-Flexible Bayesian estimation for gamma frailty models
+Laplacian-P-splines for frailty models
 ================
 Oswaldo Gressani
-2025-02-22
+2026-11-24
 
 ### Routines
 
-- **simfrail** 2025-02-22 “Updated routine for simulating survival times
-  accounting for a frailty term”.
+- **simfrail2** 2025-02-22 “Updated routine for simulating survival
+  times accounting for a frailty term”.
 
-- **lpsfrail** 2025-02-22 “Updated lpsfrail function used for simulation
-  study”.
+- **lpsfrail** 2025-02-22 “Updated lpsfrail function”.
 
-- **RealData** 2025-02-22 “Added a simple illustration of lpsfrail on
-  real data”.
+- **Simulations** 2026-11-24 “Added Simulations folder”.
 
 ### Repository version
 
-This is version 0.0.2 (2025-02-23) - “LPS for frailty models”.
+This is version 0.0.3 (2026-11-24) - “LPS for frailty models”.
 
 ### License
 

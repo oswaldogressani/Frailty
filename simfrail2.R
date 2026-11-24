@@ -1,10 +1,11 @@
 #------------------------------------------------------------------------------#
-#          Simulating survival times from a frailty model                      #
+#         Simulating survival times from a frailty model                       #
+#         simfrail2 routine                                                    #
 #         Copyright, Oswaldo Gressani. All rights reserved.                    #
 #------------------------------------------------------------------------------#
 
 
-simfrail <- function(a = 5, b = 70, frailpar = 1.5, betas = c(log(2),-0.15),
+simfrail2 <- function(a = 5, b = 70, frailpar = 1.5, betas = c(log(2),-0.15),
                      ngroups = 5, ni = rep(40, 5), censrate = 0.10){
   
   data = list()
@@ -36,31 +37,30 @@ simfrail <- function(a = 5, b = 70, frailpar = 1.5, betas = c(log(2),-0.15),
       }
       data[[i]][j,6] <- i
     }
-    # Fill censoring and event indicator
-    Tij <- data[[i]]$Time
-    rootfun <- function(rho){
-      val <- (1-censrate) - mean(exp(-rho * Tij))
-      return(val)
-    }
-    
-    
-    rho_lb <- 0.1
-    rho_ub <- 0.1
-    while(rootfun(rho_lb)>=0){
-      rho_lb <- rho_lb/10
-    }
-    while(rootfun(rho_ub)<=0){
-      rho_ub <- rho_ub * 10
-    }
+  }
   
-    rhostar <- uniroot(rootfun, lower = rho_lb, upper = rho_ub)$root
-    C <- rexp(n = ni[i], rate = rhostar)
-    delta <- as.numeric(data[[i]]$Time <= C)
-    data[[i]][,2] <- C
-    data[[i]][,3] <- delta
-    Cr[i,1] <- i
-    Cr[i,2] <- (1/ni[i])*sum(data[[i]][,3]==0)
-  
+  # Censoring scheme
+  Tij <- unlist(lapply(data, "[[", "Time"))
+  rootfun <- function(rho){
+    val <- (1-censrate) - mean(exp(-rho * Tij))
+    return(val)
+  }
+  rho_lb <- 0.1
+  rho_ub <- 0.1
+  while(rootfun(rho_lb)>=0){
+    rho_lb <- rho_lb/10
+  }
+  while(rootfun(rho_ub)<=0){
+    rho_ub <- rho_ub * 10
+  }
+  rhostar <- uniroot(rootfun, lower = rho_lb, upper = rho_ub)$root
+  for (i in 1:ngroups) {
+      C <- rexp(n = ni[i], rate = rhostar)
+      delta <- as.numeric(data[[i]]$Time <= C)
+      data[[i]][,2] <- C
+      data[[i]][,3] <- delta
+      Cr[i,1] <- i
+      Cr[i,2] <- (1/ni[i])*sum(data[[i]][,3]==0)
   }
   
   S0 <- function(t){
@@ -80,7 +80,7 @@ simfrail <- function(a = 5, b = 70, frailpar = 1.5, betas = c(log(2),-0.15),
 }
   
 # Example
-# x <- simfrail(censrate = 0.2)
+# x <- simfrail2(censrate = 0.2, ni = rep(1000, 5))
 
 
 

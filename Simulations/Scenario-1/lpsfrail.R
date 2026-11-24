@@ -3,6 +3,14 @@
 #         Copyright, Oswaldo Gressani. All rights reserved.                    #
 #------------------------------------------------------------------------------#
 
+# Source required cpp code
+# library("Rcpp")
+# library("RcppArmadillo")
+# library("blapsr")
+# # sourceCpp("Laplace.cpp")
+# sourceCpp("cubicBspline.cpp")
+# sourceCpp("KerMVN.cpp")
+
 lpsfrail <- function(x, K = 15, tmax = 120){
   
   D <- x
@@ -164,6 +172,17 @@ lpsfrail <- function(x, K = 15, tmax = 120){
     return(outlist)
   }
   
+  # Initializing B-spline coefficients
+  # df <- do.call(rbind, D)
+  # Survobj <- Surv(df$Time, df$delta)
+  # if(isTRUE(latinitcox)){
+  #  fitcox <- blapsr::coxlps(Survobj ~ z1 + z2, data = df, K = K)
+  #  # fitcoxph <- coxph(Survobj ~ z1 + z2, data = df)
+  #  latinit <- c(fitcox$spline.estim, fitcox$regcoeff[,1],0)
+  # }else{
+  # }
+  
+  
   LM <- function(x, lambda=3, maxiter = 100, tol = 1e-04, damp = 1e-03){
     dist <- 2 * tol
     iter <- 0
@@ -231,7 +250,26 @@ lpsfrail <- function(x, K = 15, tmax = 120){
     return(val)
   }
   
-  #----- Exploration of penalty over grid
+  # vgrid <- seq(-2,15, length = 20)
+  # logpv_img <- c()
+  # for(j in 1:length(vgrid)){
+  #   logpv_img[j] <- logpv(vgrid[j])
+  #   print(j)
+  # }
+  # pv_img <- exp(logpv_img + mean(abs(logpv_img)))
+  # cnorm <- sum(pv_img * (vgrid[2] - vgrid[1]))
+  # pv_img <- pv_img/cnorm
+  # 
+  # plot(vgrid, pv_img, type = "l", col = "blue")
+  
+  # vopt <- optimize(f=logpv, interval = c(-2,15), maximum = TRUE, tol = 0.1)$maximum
+  
+  # library("microbenchmark")
+  # microbenchmark(optimize(f=logpv, interval = c(-2,15), maximum = TRUE, tol = 0.1)$maximum,
+  #                times = 5L, unit = "ms")
+  
+  # Alternative strategy to find optimum
+  #----- Exploration of penalty over a grid
   loglambdas <- seq(0, 5, length = 100)
   lamb_grid <- round(10 ^ loglambdas)
   logplamb_val <- c()
@@ -244,6 +282,13 @@ lpsfrail <- function(x, K = 15, tmax = 120){
   jidx <- length(logplamb_val) - 1
   vopt <- lamb_grid[jidx]
   
+  # if (anyNA(logplamb_val)) {
+  #   nanpos <- which(is.na(logplamb_val))
+  #   lamb_grid <- lamb_grid[-nanpos]
+  #   logplamb_val <- logplamb_val[-nanpos]
+  # }
+  # lambmax <- lamb_grid[which(logplamb_val == max(logplamb_val))]
+  
   lambmap <- exp(vopt)
   Lap <- LM(x = latinit, lambda = lambmap)
   latenthat <- as.numeric(Lap$par)
@@ -255,7 +300,7 @@ lpsfrail <- function(x, K = 15, tmax = 120){
   frailhat <- exp(latenthat[(K+p+1)])
   lambdahat <- lambmap
 
-  # 90% and 95% CrI
+  # 90% and 95% CI
   CI90low <- c(betahat - qnorm(0.95) * sqrt(diag(Sigmap)[(K+1):(K+p)]),
                exp(latenthat[(K+p+1)] - qnorm(0.95) * sqrt(diag(Sigmap)[(K+p+1)])))
   CI90up <- c(betahat + qnorm(0.95) * sqrt(diag(Sigmap)[(K+1):(K+p)]),
@@ -271,10 +316,14 @@ lpsfrail <- function(x, K = 15, tmax = 120){
   rownames(CI95) <- c("beta0", "beta1", "frail")
   
   
-  outlist <- list(thetahat = thetahat, betahat = betahat,
-                  frailhat = frailhat, lambdahat = lambdahat,
-                  CI90 = CI90, CI95 = CI95,
-                  tmax = tmax, K = K)
+  outlist <- list(thetahat = thetahat,
+                  betahat = betahat,
+                  frailhat = frailhat,
+                  lambdahat = lambdahat,
+                  CI90 = CI90,
+                  CI95 = CI95,
+                  tmax = tmax,
+                  K = K)
   
   return(outlist)
 }
